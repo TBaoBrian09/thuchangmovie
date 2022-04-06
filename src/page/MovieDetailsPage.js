@@ -46,12 +46,100 @@ const MovieDetailsPage = () => {
       <p className="text-center leading-relaxed max-w-[600px] mx-auto mb-10">
         {overview}
       </p>
+      {/* <MovieMeta type="credits"></MovieMeta>
+      <MovieMeta type="videos"></MovieMeta>
+      <MovieMeta type="similar"></MovieMeta> */}
       <MovieCredits></MovieCredits>
       <MovieVideo></MovieVideo>
       <MovieSimilar></MovieSimilar>
     </div>
   );
 };
+
+function MovieMeta({ type = "videos" }) {
+  const { movieId } = useParams();
+  const { data } = useSWR(tmdbAPI.getMovieMeta(movieId, type), fetcher);
+
+  if (!data) return null;
+  const { cast } = data;
+  if (!cast || cast.length <= 0) return null;
+
+  if (type === "credits") {
+    return (
+      <div className="py-10">
+        <h2 className="text-center text-2xl mb-10">Cast</h2>
+        <div className="grid grid-cols-4 gap-5">
+          {cast.slice(0, 4).map((item) => (
+            <div className="cast-item" key={item.id}>
+              <img
+                src={tmdbAPI.imageOriginal(item.profile_path)}
+                className="w-full h-[350px] object-cover rounded-lg mb-3"
+                alt=""
+              />
+              <h3 className="text-xl font-medium">{item.name}</h3>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  } else {
+    const { results } = data;
+    if (!results || results.length <= 0) return null;
+    if (type === "videos")
+      return (
+        <div className="py-10">
+          <div className="flex flex-col gap-5">
+            {results.slice(0, 2).map((item) => (
+              <div className="" key={item.id}>
+                <h3 className="mb-5 text-xl font-medium text-white p-3 inline-block bg-seconday">
+                  {item.name}
+                </h3>
+                <div className="w-full aspect-video" key={item.id}>
+                  <iframe
+                    width="560"
+                    height="315"
+                    src={`https://www.youtube.com/embed/${item.key}`}
+                    title="YouTube video player"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full object-fill"
+                  ></iframe>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    if (type === "similar")
+      return (
+        <div className="py-10">
+          <div className="flex flex-col gap-5">
+            {results.slice(0, 2).map((item) => (
+              <div className="" key={item.id}>
+                <h3 className="mb-5 text-xl font-medium text-white p-3 inline-block bg-seconday">
+                  {item.name}
+                </h3>
+                <div className="w-full aspect-video" key={item.id}>
+                  <iframe
+                    width="560"
+                    height="315"
+                    src={`https://www.youtube.com/embed/${item.key}`}
+                    title="YouTube video player"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full object-fill"
+                  ></iframe>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+  }
+  return null;
+}
 
 function MovieCredits() {
   const { movieId } = useParams();

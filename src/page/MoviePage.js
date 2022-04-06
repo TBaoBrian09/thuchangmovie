@@ -1,161 +1,114 @@
-import React, { Fragment } from "react";
-import { useParams } from "react-router-dom";
-import { SwiperSlide, Swiper } from "swiper/react";
+import React, { useEffect, useState } from "react";
 import useSWR from "swr";
 import MovieCart from "../components/movie/MovieCart";
-import { apiKey, fetcher } from "../config";
+import { fetcher } from "../config";
+import useDebounce from "../hooks/useDebounce";
 
-const MovieDetailsPage = () => {
-  const { movieId } = useParams();
-  const { data, error } = useSWR(
-    `
-  https://api.themoviedb.org/3/movie/${movieId}?api_key=${apiKey}`,
-    fetcher
+// https://api.themoviedb.org/3/search/movie?api_key=<<api_key>>
+
+const MoviePage = () => {
+  const [filter, setFilter] = useState("");
+  const [url, setUrl] = useState(
+    "https://api.themoviedb.org/3/movie/popular?api_key=7ac7f417e57e14a219be2469ac078664"
   );
-  if (!data) return null;
-  const { backdrop_path, poster_path, title, genres, overview } = data;
+  const filterDebounce = useDebounce(filter, 500);
+  const handleFilterChange = (e) => {
+    setFilter(e.target.value);
+  };
+  const { data, error } = useSWR(url, fetcher);
+  const loading = !data && !error;
+
+  const movies = data?.results || [];
+
+  useEffect(() => {
+    if (filterDebounce) {
+      setUrl(
+        `https://api.themoviedb.org/3/search/movie?api_key=7ac7f417e57e14a219be2469ac078664&query=${filterDebounce}`
+      );
+    } else {
+      setUrl(
+        "https://api.themoviedb.org/3/movie/popular?api_key=7ac7f417e57e14a219be2469ac078664"
+      );
+    }
+  }, [filterDebounce]);
+
   return (
-    <div className="py-10">
-      <div className="w-full h-[600px] relative">
-        <div className="absolute inset-0 bg-black bg-opacity-60"></div>
-        <div
-          className="w-full h-screen bg-cover bg-no-repeat"
-          style={{
-            backgroundImage: `url(https://image.tmdb.org/t/p/original/${backdrop_path})`,
-          }}
-        ></div>
-      </div>
-      <div className="w-full h-[400px] max-w-[800px] mx-auto -mt-[200px] relative z-10 pb-10">
-        <img
-          src={`https://image.tmdb.org/t/p/original/${poster_path}`}
-          alt=""
-          className="w-full h-full object-cover rounded-xl"
-        />
-      </div>
-      <h1 className="text-center text-3xl font-bold text-white mb-10">
-        {title}
-      </h1>
-      {genres.length > 0 && (
-        <div className="flex items-center justify-center gap-x-5 mb-10">
-          {genres.map((item) => (
-            <span
-              className="py-2 px-4 border border-primary text-primary rounded-md"
-              key={item.id}
-            >
-              {item.name}
-            </span>
-          ))}
+    <div className="py-10 page-container">
+      <div className="flex mb-10">
+        <div className="flex-1">
+          <input
+            onChange={handleFilterChange}
+            type="text"
+            className="w-full p-4 text-white rounded-lg outline-none bg-slate-800"
+            placeholder="Type here to search..."
+          />
         </div>
+        <button className="p-4 bg-primary text-white">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </button>
+      </div>
+      {loading && (
+        <div className="w-10 h-10 rounded-full animate-spin border-4 border-t-transparent border-t-4 mx-auto"></div>
       )}
-      <p className="text-center leading-relaxed max-w-[600px] mx-auto mb-10">
-        {overview}
-      </p>
-      <MovieCredits></MovieCredits>
-      <MovieVideo></MovieVideo>
-      <MovieSimilar></MovieSimilar>
+      <div className="grid grid-cols-4 gap-10 mb-10">
+        {!loading &&
+          movies.length > 0 &&
+          movies.map((item) => (
+            <MovieCart key={item.id} item={item}></MovieCart>
+          ))}
+      </div>
+      <div className="flex items-center justify-center gap-x-5">
+        <span className="cursor-pointer">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </span>
+        <span className="cursor-pointer inline-block py-2 px-4 leading-none bg-white text-slate-900">
+          1
+        </span>
+        <span className="cursor-pointer">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </span>
+      </div>
     </div>
   );
 };
 
-function MovieCredits() {
-  const { movieId } = useParams();
-  const { data, error } = useSWR(
-    `
-  https://api.themoviedb.org/3/movie/${movieId}/credits?api_key=${apiKey}`,
-    fetcher
-  );
-
-  if (!data) return null;
-  const { cast } = data;
-  if (!cast || cast.length <= 0) return null;
-
-  return (
-    <div className="py-10">
-      <h2 className="text-center text-2xl mb-10">Cast</h2>
-      <div className="grid grid-cols-4 gap-5">
-        {cast.slice(0, 4).map((item) => (
-          <div className="cast-item" key={item.id}>
-            <img
-              src={`https://image.tmdb.org/t/p/original/${item.profile_path}`}
-              className="w-full h-[350px] object-cover rounded-lg mb-3"
-              alt=""
-            />
-            <h3 className="text-xl font-medium">{item.name}</h3>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MovieVideo() {
-  const { movieId } = useParams();
-  const { data, error } = useSWR(
-    `
-    https://api.themoviedb.org/3/movie/${movieId}/videos?api_key=${apiKey}`,
-    fetcher
-  );
-
-  if (!data) return null;
-
-  const { results } = data;
-
-  if (!results || results.length <= 0) return null;
-
-  return (
-    <div className="py-10">
-      <div className="flex flex-col gap-5">
-        {results.slice(0, 2).map((item) => (
-          <div className="" key={item.id}>
-            <h3 className="mb-5 text-xl font-medium text-white p-3 inline-block bg-seconday">
-              {item.name}
-            </h3>
-            <div className="w-full aspect-video" key={item.id}>
-              <iframe
-                width="560"
-                height="315"
-                src={`https://www.youtube.com/embed/${item.key}`}
-                title="YouTube video player"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full object-fill"
-              ></iframe>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MovieSimilar() {
-  const { movieId } = useParams();
-  const { data, error } = useSWR(
-    `
-    https://api.themoviedb.org/3/movie/${movieId}/similar?api_key=${apiKey}`,
-    fetcher
-  );
-
-  if (!data) return null;
-  const { results } = data;
-  if (!results || results.length <= 0) return null;
-
-  return (
-    <div className="py-10">
-      <h2 className="text-3xl font-medium mb-10">Similar movies</h2>
-      <div className="movie-list">
-        <Swiper grabCursor={"true"} spaceBetween={40} slidesPerView={"auto"}>
-          {results.length > 0 &&
-            results.map((item) => (
-              <SwiperSlide key={item.id}>
-                <MovieCart item={item}></MovieCart>
-              </SwiperSlide>
-            ))}
-        </Swiper>
-      </div>
-    </div>
-  );
-}
-
-export default MovieDetailsPage;
+export default MoviePage;

@@ -3,6 +3,8 @@ import useSWR from "swr";
 import MovieCart from "../components/movie/MovieCart";
 import { fetcher } from "../config";
 import useDebounce from "../hooks/useDebounce";
+import { v4 } from "uuid";
+import MovieCardSkeleton from "./MovieCardSkeleton";
 
 // https://api.themoviedb.org/3/search/movie?api_key=<<api_key>>
 
@@ -64,8 +66,15 @@ const MoviePage = () => {
           </svg>
         </button>
       </div>
-      {loading && (
+      {/* {loading && (
         <div className="w-10 h-10 rounded-full animate-spin border-4 border-t-transparent border-t-4 mx-auto"></div>
+      )} */}
+      {loading && (
+        <div className="grid grid-cols-4 gap-10 mb-10">
+          {new Array(20).fill(0).map((item) => (
+            <MovieCardSkeleton key={v4()}></MovieCardSkeleton>
+          ))}
+        </div>
       )}
       <div className="grid grid-cols-4 gap-10 mb-10">
         {!loading &&
